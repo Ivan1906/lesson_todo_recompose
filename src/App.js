@@ -1,106 +1,97 @@
-import React, { Component } from 'react';
-import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import React from "react";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import { compose, withHandlers, withState } from "recompose";
 
-import { AddTodo } from './comonents/AddTodo';
-import { NavBar } from './comonents/NavBar';
-import { ListTodos } from './comonents/ListTodos';
-import './App.css';
+import { AddTodoEnhance } from "./comonents/AddTodo";
+import { NavBar } from "./comonents/NavBar";
+import { ListTodosEnhance } from "./comonents/ListTodos";
+import "./App.css";
 
-export default class App extends Component {
-  constructor() {
-    super();
-    this.state = {
-      todos: [],
-      counter: 1,
-    };
-  }
+function App({ onKeyDown, todos, onChange, onDelete }) {
+  return (
+    <Router>
+      <div className="wrapper">
+        <div className="container">
+          <AddTodoEnhance onKeyDown={onKeyDown} />
+          <NavBar />
+          <Switch>
+            <Route
+              exact
+              path="/"
+              render={props => (
+                <ListTodosEnhance
+                  {...props}
+                  todos={todos}
+                  onChange={onChange}
+                  onDelete={onDelete}
+                />
+              )}
+            />
 
-  onKeyDown = event => {
-    let { todos, counter } = this.state;
-    let todo = {
-      id: counter,
-      text: event.currentTarget.value,
-      type: 'new',
-    };
-    todos.push(todo);
+            <Route
+              path="/new"
+              render={props => (
+                <ListTodosEnhance
+                  {...props}
+                  todos={todos}
+                  onChange={onChange}
+                  onDelete={onDelete}
+                />
+              )}
+            />
 
-    this.setState(() => ({
-      todos: todos,
-      counter: ++counter,
-    }));
-  };
-
-  onChange = event => {
-    let id = event.currentTarget.parentElement.getAttribute('id');
-
-    let newTodos = this.state.todos.map(todo =>
-      todo.id.toString() === id
-        ? {
-            ...todo,
-            type: todo.type === 'new' ? 'completed' : 'new',
-          }
-        : todo,
-    );
-    this.setState(({ todos }) => ({ todos: newTodos }));
-  };
-
-  onDelete = event => {
-    let id = event.currentTarget.parentElement.getAttribute('id');
-
-    let newTodos = this.state.todos.filter(todo => (todo.id.toString() !== id ? todo : null));
-    this.setState(state => ({ todos: newTodos }));
-  };
-
-  render() {
-    let { todos } = this.state;
-
-    return (
-      <Router>
-        <div className="wrapper">
-          <div className="container">
-            <AddTodo onKeyDown={this.onKeyDown} />
-            <NavBar />
-            <Switch>
-              <Route
-                exact
-                path="/"
-                render={props => (
-                  <ListTodos
-                    {...props}
-                    todos={todos}
-                    onChange={this.onChange}
-                    onDelete={this.onDelete}
-                  />
-                )}
-              />
-
-              <Route
-                path="/new"
-                render={props => (
-                  <ListTodos
-                    {...props}
-                    todos={todos}
-                    onChange={this.onChange}
-                    onDelete={this.onDelete}
-                  />
-                )}
-              />
-
-              <Route
-                path="/completed"
-                render={props => (
-                  <ListTodos
-                    {...props}
-                    todos={todos}
-                    onChange={this.onChange}
-                    onDelete={this.onDelete}
-                  />
-                )}
-              />
-            </Switch>
-          </div>
+            <Route
+              path="/completed"
+              render={props => (
+                <ListTodosEnhance
+                  {...props}
+                  todos={todos}
+                  onChange={onChange}
+                  onDelete={onDelete}
+                />
+              )}
+            />
+          </Switch>
         </div>
-      </Router>
-    );
-  }
+      </div>
+    </Router>
+  );
 }
+
+const enhance = compose(
+  withState("todos", "setTodos", []),
+  withState("counter", "setCounter", 1),
+  withHandlers({
+    onKeyDown: props => event => {
+      let { todos, counter, setTodos, setCounter } = props;
+      todos.push({ id: counter, text: event.currentTarget.value, type: "new" });
+      setTodos(todos => todos);
+      setCounter(n => n + 1);
+    },
+    onChange: props => event => {
+      let { todos, setTodos } = props;
+      let id = event.currentTarget.parentElement.getAttribute("id");
+
+      let newTodos = todos.map(todo =>
+        todo.id.toString() === id
+          ? {
+              ...todo,
+              type: todo.type === "new" ? "completed" : "new"
+            }
+          : todo
+      );
+      setTodos(todos => newTodos);
+    },
+    onDelete: props => event => {
+      let { todos, setTodos } = props;
+      let id = event.currentTarget.parentElement.getAttribute("id");
+
+      let newTodos = todos.filter(todo =>
+        todo.id.toString() !== id ? todo : null
+      );
+      setTodos(todos => newTodos);
+    }
+  })
+);
+
+export const AppEnhance = enhance(App);
