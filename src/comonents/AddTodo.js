@@ -15,7 +15,7 @@ const enhance = compose(
   }),
   withHandlers({
     onKeyDown: props => event => {
-      if (event.keyCode === 13) {
+      if (event.keyCode === 13 && event.currentTarget.value.trim() !== "") {
         props.onKeyDown(event);
         event.currentTarget.value = "";
       }
